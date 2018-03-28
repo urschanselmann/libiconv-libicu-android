@@ -1,0 +1,1 @@
+SKIP_HARFBUZZ=1 SHARED_ICU=1 SKIP_ICONV=1 ARCHS='armeabi-v7a' LIBSUFFIX=swift ./build.sh

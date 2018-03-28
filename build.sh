@@ -172,11 +172,18 @@ cd $BUILDDIR/$ARCH
 
 cd $BUILDDIR/$ARCH
 
-[ -e libicuuc.a ] || [ -e libicuuc.so ] || [ $SKIP_ICUUC ] {
+[ -e libicuuc$LIBSUFFIX.a ] || [ -e libicuuc$LIBSUFFIX.so ] || [ $SKIP_ICUUC ] || {
 
 	rm -rf icu
 
 	tar xvf ../icu4c-59_1-src.tgz
+
+  # The ENVVAR LIBSUFFIX should add the suffix only to the libname and not to the symbols.
+  # ToDo: Find the right way in Swift to refer to an alternative library with symbol prefixing or any other method to
+  # remove this.
+  if [ $LIBSUFFIX ]; then
+    patch -p0 < ../patches/icu_suffix_only_on_libname.patch
+  fi
 
 	cd icu/source
 
@@ -208,6 +215,7 @@ cd $BUILDDIR/$ARCH
 		./configure \
 		--host=$GCCPREFIX \
 		--prefix=`pwd`/../../ \
+		--with-library-suffix=$LIBSUFFIX \
 		--with-cross-build=`pwd`/cross \
 		$libtype \
 		--with-data-packaging=archive \
@@ -229,7 +237,7 @@ cd $BUILDDIR/$ARCH
 		$BUILDDIR/setCrossEnvironment-$ARCH.sh \
 		make V=1 install || exit 1
 
-	for f in libicudata libicutest libicui18n libicuio libicutu libicuuc; do
+	for f in libicudata$LIBSUFFIX libicutest$LIBSUFFIX libicui18n$LIBSUFFIX libicuio$LIBSUFFIX libicutu$LIBSUFFIX libicuuc$LIBSUFFIX; do
 		if [ $SHARED_ICU ]; then
 			cp -f -H ../../lib/$f.so ../../
 		else
@@ -270,12 +278,15 @@ cd $BUILDDIR/$ARCH
 		--enable-static --enable-shared \
 		|| exit 1
 
+	cmd='$LD $CFLAGS -shared src/.libs/*.o -o src/.libs/libicu-le-hb.so.0.0.0 -L../lib -lharfbuzz $LDFLAGS'
+	cmd="$cmd -licuuc$LIBSUFFIX"
+
 	env PATH=`pwd`:$PATH \
 		$BUILDDIR/setCrossEnvironment-$ARCH.sh \
 		make V=1 || \
 		env PATH=`pwd`:$PATH \
 		$BUILDDIR/setCrossEnvironment-$ARCH.sh \
-		sh -c '$LD $CFLAGS -shared src/.libs/*.o -o src/.libs/libicu-le-hb.so.0.0.0 -L../lib -lharfbuzz -licuuc $LDFLAGS' || exit 1
+		sh -c "$cmd" || exit 1
 
 	env PATH=`pwd`:$PATH \
 		$BUILDDIR/setCrossEnvironment-$ARCH.sh \

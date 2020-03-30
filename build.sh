@@ -175,12 +175,12 @@ cd $BUILDDIR/$ARCH
 	cp -f $BUILDDIR/config.sub .
 	cp -f $BUILDDIR/config.guess .
 
-	[ -d cross ] || {
-		mkdir cross
-		cd cross
-		../configure || exit 1
+	[ -d $BUILDDIR/cross ] || {
+		mkdir $BUILDDIR/cross
+		cd $BUILDDIR/cross
+		$BUILDDIR/$ARCH/icu/source/configure || exit 1
 		make -j$NCPU VERBOSE=1 || exit 1
-		cd ..
+		cd $BUILDDIR/$ARCH/icu/source
 	} || exit 1
 
 	sed -i,tmp "s@LD_SONAME *=.*@LD_SONAME =@g" config/mh-linux
@@ -201,7 +201,7 @@ cd $BUILDDIR/$ARCH
 		--host=$GCCPREFIX \
 		--prefix=`pwd`/../../ \
 		--with-library-suffix=$LIBSUFFIX \
-		--with-cross-build=`pwd`/cross \
+		--with-cross-build=$BUILDDIR/cross \
 		$libtype \
 		--with-data-packaging=archive \
 		|| exit 1
@@ -352,7 +352,7 @@ cd $BUILDDIR/$ARCH
 		./configure \
 		--host=$GCCPREFIX \
 		--prefix=`pwd`/../../ \
-		--with-cross-build=`pwd`/cross \
+		--with-cross-build=$BUILDDIR/cross \
 		--enable-static --disable-shared \
 		--with-data-packaging=archive \
 		--enable-layoutex \
